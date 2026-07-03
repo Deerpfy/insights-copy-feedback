@@ -1,0 +1,268 @@
+/* PSI Copy Feedback - injected UI styles.
+ *
+ * Every selector is prefixed .psicf- so nothing leaks into PSI or the
+ * Lighthouse report. The visual language deliberately mirrors PSI's native
+ * Material controls (outlined pill, Google Sans/Roboto, Google Blue
+ * #1a73e8) so injected UI reads as first-party. */
+
+/* Fallback toolbar (used only when the native "Copy link" button cannot be
+ * located structurally): a right-aligned row directly above the report. */
+.psicf-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 12px 0 4px;
+}
+
+/* Report-level "Copy feedback" pill, cloned from PSI's outlined button. */
+.psicf-report-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px 0 12px;
+  margin: 0;
+  border: 1px solid #dadce0;
+  border-radius: 18px;
+  background: #fff;
+  color: #1a73e8;
+  font-family: 'Google Sans', 'Google Sans Text', Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.25px;
+  line-height: normal;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
+.psicf-report-btn--inline {
+  margin-left: 8px;
+}
+
+.psicf-report-btn:hover {
+  background: rgba(26, 115, 232, 0.04);
+}
+
+.psicf-report-btn:active {
+  background: rgba(26, 115, 232, 0.12);
+}
+
+.psicf-report-btn svg {
+  flex: none;
+}
+
+/* Per-audit round icon button, sized to sit inside the audit row header
+ * without shifting the native layout. */
+.psicf-row-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  margin: 0 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #5f6368;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.psicf-row-btn:hover {
+  background: rgba(60, 64, 67, 0.08);
+  color: #202124;
+}
+
+.psicf-row-btn:active {
+  background: rgba(60, 64, 67, 0.16);
+}
+
+/* Shared focus ring. */
+.psicf-report-btn:focus-visible,
+.psicf-row-btn:focus-visible,
+.psicf-filled-btn:focus-visible,
+.psicf-text-btn:focus-visible,
+.psicf-popover__row input[type='checkbox']:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+}
+
+/* Group-selection popover, Material menu look. */
+.psicf-popover {
+  position: fixed;
+  z-index: 2147483646;
+  min-width: 264px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #fff;
+  color: #202124;
+  font-family: Roboto, 'Google Sans Text', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 12px 4px rgba(60, 64, 67, 0.15);
+  box-sizing: border-box;
+}
+
+.psicf-popover__title {
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 8px;
+}
+
+.psicf-popover__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.psicf-popover__row input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  flex: none;
+  accent-color: #1a73e8;
+  cursor: pointer;
+}
+
+.psicf-popover__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.psicf-filled-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 36px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 18px;
+  background: #1a73e8;
+  color: #fff;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.25px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.psicf-filled-btn:hover {
+  background: #1765cc;
+}
+
+.psicf-filled-btn:disabled {
+  background: #dadce0;
+  color: #80868b;
+  cursor: default;
+}
+
+.psicf-text-btn {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 18px;
+  background: transparent;
+  color: #1a73e8;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.25px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.psicf-text-btn:hover {
+  background: rgba(26, 115, 232, 0.04);
+}
+
+/* Non-blocking confirmation toast. */
+.psicf-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translate(-50%, 8px);
+  z-index: 2147483647;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: #202124;
+  color: #fff;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.psicf-toast--show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.psicf-toast--error {
+  background: #b3261e;
+}
+
+/* Manual-copy dialog: last-resort fallback when all clipboard APIs fail. */
+.psicf-manual {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2147483647;
+  width: min(640px, calc(100vw - 32px));
+  padding: 16px;
+  border-radius: 8px;
+  background: #fff;
+  color: #202124;
+  font-family: Roboto, 'Google Sans Text', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 12px 4px rgba(60, 64, 67, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.psicf-manual__text {
+  width: 100%;
+  height: 240px;
+  padding: 8px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: #fff;
+  color: #202124;
+  font-family: 'Roboto Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.psicf-manual .psicf-filled-btn {
+  align-self: flex-end;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .psicf-toast {
+    transition: none;
+  }
+}
