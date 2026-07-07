@@ -15,6 +15,14 @@ An outlined pill button styled to match PSI's native "Copy link" button. Clickin
 
 Copy compiles the selected groups from the currently visible report (active Mobile/Desktop tab, visible categories) into one structured document and puts it on the clipboard.
 
+### Output language selector
+
+The popover has an "Output language" select: Browser default, English, Čeština. Default follows the browser language (`navigator.language`, cs -> Czech, anything else -> English); the choice persists in the site's localStorage. It switches all extension-generated strings: the injected UI (button labels, popover, toasts) and the scaffolding of the copied output (document title, header field labels, section headings, notes).
+
+Selecting a language only stores the preference. The automation lives in the Copy button: if the selected language differs from the PSI page locale when you click Copy, the extension opens a new tab at `/analysis?url=<target>&hl=<lang>` (preserving `form_factor`) with your group selection encoded in the URL hash, waits there for the fresh report to finish rendering, copies automatically, notifies the original tab (success toast via BroadcastChannel), and closes the helper tab by itself. A stored analysis keeps the locale it was generated with, which is why a fresh run is required instead of a reload. If the popup is blocked, it falls back to the same flow in the current tab via sessionStorage. Locale mismatch detection reads the report's own generation locale (`configSettings.locale` inside `window.__LIGHTHOUSE_MOBILE_JSON__` / `__LIGHTHOUSE_DESKTOP_JSON__`, mirrored to a DOM attribute by a tiny MAIN-world bridge script, since content scripts cannot read page globals), then the `?hl=` parameter, then the browser language. PSI's `<html lang>` is ignored: it is hardcoded to `en` regardless of the served UI language. The bridge also supplies the exact analyzed URL (`finalDisplayedUrl`) for the rerun. The MAIN-world content script requires Chrome/Brave 111+. Pending intents are one-shot, expire after 10 minutes, and fire only with an exact target URL. Reruns take the usual analysis time and metrics can shift slightly between runs.
+
+One thing is never translated: severity tags `[ERROR]` `[WARNING]` `[GOOD]` `[INFO]` are fixed machine-readable tokens.
+
 ### Per-audit copy buttons
 
 Every audit row header gets a small copy icon. Clicking it copies that single audit's complete block, including its details table, even when the audit is collapsed. No expanding needed: the Lighthouse renderer builds the full DOM up front, and the extension reads it directly.
@@ -83,6 +91,7 @@ Detail types with no sensible plain-text form (request chains, filmstrips, scree
 ## Privacy and footprint
 
 - Injects only on `https://pagespeed.web.dev/*`. On every other site: nothing is injected, nothing runs.
-- No permissions requested, no background service worker, no telemetry, no network requests of any kind.
+- Single permission: `clipboardWrite` (no host, tab, or storage access). Required so the automatic copy after a localized rerun can write the clipboard without a fresh user gesture.
+- No background service worker, no telemetry, no network requests of any kind.
 - Clipboard writes happen only on your click, via `navigator.clipboard.writeText` with an `execCommand` fallback and a manual-copy dialog if both fail.
 - A single debounced MutationObserver keeps the buttons alive across PSI's re-renders and Mobile/Desktop switches; all report parsing runs only when you click a copy button.

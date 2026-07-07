@@ -1,9 +1,10 @@
 {
   "manifest_version": 3,
   "name": "PSI Copy Feedback",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "One-click copying of PageSpeed Insights (Lighthouse) findings as AI-friendly plain text. Injects only on pagespeed.web.dev.",
-  "minimum_chrome_version": "100",
+  "minimum_chrome_version": "111",
+  "permissions": ["clipboardWrite"],
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
@@ -16,6 +17,12 @@
       "js": ["content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://pagespeed.web.dev/*"],
+      "js": ["bridge.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
     }
   ]
 }
