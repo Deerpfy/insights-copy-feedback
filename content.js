@@ -424,10 +424,28 @@
   // Exact analyzed-URL sources only: the ?url= request param or the visible
   // header link. Returns '' when neither exists. Used by the locale rerun,
   // which must never act on the lossy path-slug reconstruction.
+  // Defense in depth against SPA staleness: accept the bridged Lighthouse
+  // URL only when its scheme+host slug prefixes the /analysis/<slug> the page
+  // currently shows.
+  function bridgedMatchesPath(u) {
+    const m = location.pathname.match(/\/analysis\/([^/]+)/);
+    if (!m) return false;
+    let p;
+    try {
+      p = new URL(u);
+    } catch (e) {
+      return false;
+    }
+    const prefix = (p.protocol.replace(':', '') + '-' + p.hostname)
+      .replace(/[^a-z0-9]+/gi, '-')
+      .toLowerCase();
+    return !!prefix && m[1].toLowerCase().indexOf(prefix) === 0;
+  }
+
   function getAnalyzedUrlExact(root) {
     // Bridged from the Lighthouse JSON (finalDisplayedUrl): most exact.
     const bridged = document.documentElement.getAttribute('data-' + P + '-lhr-url') || '';
-    if (/^https?:\/\//i.test(bridged)) return bridged;
+    if (/^https?:\/\//i.test(bridged) && bridgedMatchesPath(bridged)) return bridged;
 
     try {
       const q = new URL(location.href).searchParams.get('url');

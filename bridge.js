@@ -1,35 +1,69 @@
 /* PSI Copy Feedback - MAIN-world bridge.
  *
- * Your console showed why detection failed: PSI hardcodes lang="en" in the
- * HTML shell regardless of the served UI language. The authoritative signal
- * is the Lighthouse result itself, which PSI exposes on the page window as
- * __LIGHTHOUSE_MOBILE_JSON__ / __LIGHTHOUSE_DESKTOP_JSON__ with
- * configSettings.locale = the locale the report was GENERATED in.
+ * PSI hardcodes lang="en" in the HTML shell regardless of the served UI
+ * language, so the authoritative locale signal is the Lighthouse result
+ * itself: window.__LIGHTHOUSE_MOBILE_JSON__ / __LIGHTHOUSE_DESKTOP_JSON__
+ * carry configSettings.locale (generation locale) and finalDisplayedUrl
+ * (exact analyzed URL). Content scripts live in an isolated world and cannot
+ * read page globals, so this MAIN-world script (Chrome 111+) mirrors both
+ * onto <html> data attributes, which the worlds share.
  *
- * Content scripts live in an isolated world and cannot read page globals,
- * so this tiny script runs in the MAIN world (Chrome 111+) and mirrors two
- * values onto <html> data attributes, which both worlds share. */
+ * PSI is an SPA: navigating between analyses does not reload the page, and
+ * the globals from a previous run linger. Therefore this script (a) re-syncs
+ * continuously, (b) clears the attributes the moment the URL changes, and
+ * (c) stamps ONLY when the global's target matches the /analysis/<slug> the
+ * page currently shows, so a stale report can never leak into another
+ * site's analysis. */
 (() => {
   'use strict';
 
-  function read() {
+  const A_LOC = 'data-psicf-lhr-locale';
+  const A_URL = 'data-psicf-lhr-url';
+
+  function slugPrefix(u) {
     try {
-      const lhr = window.__LIGHTHOUSE_MOBILE_JSON__ || window.__LIGHTHOUSE_DESKTOP_JSON__;
-      if (!lhr) return false;
-      const loc = lhr.configSettings && lhr.configSettings.locale;
-      if (loc) document.documentElement.setAttribute('data-psicf-lhr-locale', String(loc));
-      const u = lhr.finalDisplayedUrl || lhr.finalUrl || lhr.requestedUrl;
-      if (u) document.documentElement.setAttribute('data-psicf-lhr-url', String(u));
-      return !!loc;
+      const p = new URL(u);
+      return (p.protocol.replace(':', '') + '-' + p.hostname)
+        .replace(/[^a-z0-9]+/gi, '-')
+        .toLowerCase();
     } catch (e) {
-      return false;
+      return '';
     }
   }
 
-  if (read()) return;
-  // The globals appear only once an analysis finishes; poll up to ~2 min.
-  let n = 0;
-  const iv = setInterval(() => {
-    if (read() || ++n > 240) clearInterval(iv);
+  function currentSlug() {
+    const m = location.pathname.match(/\/analysis\/([^/]+)/);
+    return m ? m[1].toLowerCase() : '';
+  }
+
+  function clear() {
+    document.documentElement.removeAttribute(A_LOC);
+    document.documentElement.removeAttribute(A_URL);
+  }
+
+  function sync() {
+    try {
+      const lhr = window.__LIGHTHOUSE_MOBILE_JSON__ || window.__LIGHTHOUSE_DESKTOP_JSON__;
+      const url = lhr && (lhr.finalDisplayedUrl || lhr.finalUrl || lhr.requestedUrl);
+      const loc = lhr && lhr.configSettings && lhr.configSettings.locale;
+      const slug = currentSlug();
+      const pref = url ? slugPrefix(url) : '';
+      if (url && slug && pref && slug.indexOf(pref) === 0) {
+        document.documentElement.setAttribute(A_URL, String(url));
+        if (loc) document.documentElement.setAttribute(A_LOC, String(loc));
+      } else {
+        clear();
+      }
+    } catch (e) { /* never break the page */ }
+  }
+
+  let lastHref = location.href;
+  setInterval(() => {
+    if (location.href !== lastHref) {
+      lastHref = location.href;
+      clear(); // Immediate: attributes must never outlive their analysis.
+    }
+    sync();
   }, 500);
+  sync();
 })();
