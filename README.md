@@ -88,10 +88,36 @@ PSI's own markup uses minified, unstable class names and fully localized text, s
 
 Detail types with no sensible plain-text form (request chains, filmstrips, screenshots, source snippets) degrade to a `(details table omitted: ...)` note instead of failing the copy. Table copies include all rows, including rows PSI hides behind filters, since complete data is more useful to an AI consumer.
 
+Every selector lives in one central registry inside `content.js`, stamped "verified against PSI as of 2026-07-14". Each logical target has an ordered fallback chain by stability tier (1: `lh-*` classes, 2: ARIA/structure, 3: Material icon ligatures, 4: resolved-neighbour position). When a Tier 1 primary misses and a lower tier catches, the extension logs a one-time `console.warn` naming the selector, an early warning that PSI's markup has drifted.
+
+## Diagnostics
+
+The extension ships a read-only self-diagnostic. On any `pagespeed.web.dev` tab, open DevTools and run:
+
+```js
+await __psicf_diag()
+```
+
+It returns a structured object and pretty-prints a grouped **OK / WARN / FAIL** report by subsystem: environment (host, extension context, content and bridge both loaded), DOM anchors (report container, audit count, severity buckets, injection anchor, exactly-one button, per-audit icon count), locale/URL (bridge JSON readable, bridge URL equals the current slug, bridge locale sanity, active strategy matches the visible tab), per-selector health (primary hit / fallback tier / miss), clipboard availability plus a **no-write dry run** of the real serialize path, and lifecycle (BroadcastChannel, observer, localStorage).
+
+- **OK** = nominal; **WARN** = degraded but functional (a fallback tier fired, bridge locale unreadable so falling back to the browser language, clipboard permission is `prompt`); **FAIL** = a depended-on subsystem is broken (e.g. a hidden or absent bridge yields FAIL "bridge not responding").
+- The diagnostic and its dry run are strictly read-only: no clipboard write, no navigation, no attribute stamping, and zero cost until you call it.
+- It is callable from both the default page console (via a MAIN-world forwarder) and the extension's content-script console context.
+
+**Debug flag.** Set `localStorage.setItem('psicf-debug', '1')` on the PSI tab and reload to run a minimal subset once after the report renders; it `console.warn`s only when something is already wrong. Remove with `localStorage.removeItem('psicf-debug')`. Normal users never see it.
+
+### Fixture smoke check (before a version bump)
+
+There is no automated suite bundled with the extension (it stays dependency-free). Before shipping a version bump, run this lightweight smoke check:
+
+1. **Output-parity fixture.** Render a saved PSI report DOM/JSON shape (an errors/warnings/goodies mix with a detail table, a URL cell, a sub-item row, a list, and an unsupported detail) through the copy pipeline and confirm the pasted output is unchanged from the previous version. A jsdom harness that splices out `compileReport`/`serializeAudit` and diffs old-vs-new output on a couple of representative shapes is enough; keep a copy of the fixtures alongside the harness.
+2. **Manual pass on live PSI.** Load unpacked, open `https://pagespeed.web.dev/`, run an analysis, and exercise: the report-level "Copy feedback" popover with each scope, a per-audit copy, a Mobile/Desktop switch (no duplicate buttons, copies the visible strategy), and the output-language rerun (Browser default / English / Čeština). Then navigate to a second analysis and trigger a language rerun to confirm it copies the current site's URL and locale, never the previous one. Finish with `await __psicf_diag()` and confirm no unexpected FAIL.
+
 ## Privacy and footprint
 
 - Injects only on `https://pagespeed.web.dev/*`. On every other site: nothing is injected, nothing runs.
 - Single permission: `clipboardWrite` (no host, tab, or storage access). Required so the automatic copy after a localized rerun can write the clipboard without a fresh user gesture.
 - No background service worker, no telemetry, no network requests of any kind.
 - Clipboard writes happen only on your click, via `navigator.clipboard.writeText` with an `execCommand` fallback and a manual-copy dialog if both fail.
-- A single debounced MutationObserver keeps the buttons alive across PSI's re-renders and Mobile/Desktop switches; all report parsing runs only when you click a copy button.
+- A single debounced MutationObserver keeps the buttons alive across PSI's re-renders and Mobile/Desktop switches; it only re-checks that the buttons are present and never parses the report. Report parsing runs only when you click a copy button, or on an explicit, read-only `__psicf_diag()` call.
+- After an extension reload/update the content script stops quietly (it disconnects the observer) instead of throwing into the page.
